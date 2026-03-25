@@ -29,8 +29,8 @@
 
 # 🌐 Production Deployment
 
-<a href="https://www.joinflix.store">
-  <img src="https://img.shields.io/badge/Live-www.joinflix.store(운영 기간 1년)-6C63FF?style=for-the-badge"/>
+<a href="https://www.joinflix.co.kr">
+  <img src="https://img.shields.io/badge/Live-www.joinflix.co.kr(운영 기간 1년)-6C63FF?style=for-the-badge"/>
 </a>
 
 - AWS EC2 기반 운영
