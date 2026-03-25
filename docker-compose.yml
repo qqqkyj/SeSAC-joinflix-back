@@ -1,46 +1,113 @@
-version: '3.9'
+version: "3.9"
 
 services:
-  # Redis 서비스 설정
-  redis:
-    image: 'redis:7.2.1-alpine'
-    container_name: 'redis-joinflix'
+  # 1. Frontend
+#  frontend:
+#    build: ./frontend
+#    image: 123rkdduswn/joinflix-front-local:latest
+#    container_name: frontend-joinflix
+#    ports:
+#      - "80:80"
+#    depends_on:
+#      - backend
+#    networks:
+#      - joinflix-network
+
+  # 2. Backend (Spring Boot)
+  backend:
+    build: .
+    image: 123rkdduswn/joinflix-back-local:latest
+    container_name: backend-joinflix
     ports:
-      - '6379:6379'
-#    volumes:
-#      - redis_data:/data
-    # 데이터 영속성을 위해 AOF 모드 활성화
+      - "8080:8080"
+    env_file:
+      - .env
+    environment:
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_NAME=joinflix
+      - DB_USERNAME=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    volumes:
+      - ./build/libs:/app/build/libs
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    networks:
+      - joinflix-network
+
+  # 3. Redis (Cache/Session)
+  redis:
+    image: "redis:7.2.1-alpine"
+    container_name: redis-joinflix
+    ports:
+      - "6379:6379"
     command: redis-server --appendonly yes
     networks:
       - joinflix-network
 
-  # MySQL 서비스 설정
+  # 4. MySQL (Database)
   mysql:
-    image: 'mysql:8.0'
-    container_name: 'mysql-joinflix'
+    image: "mysql:8.0"
+    container_name: mysql-joinflix
     environment:
-      MYSQL_ROOT_PASSWORD: 'password'
-      MYSQL_DATABASE: 'joinflix'
-#      MYSQL_USER: 'user'
-#      MYSQL_PASSWORD: 'password'
-      TZ: 'Asia/Seoul'
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      MYSQL_DATABASE: "joinflix"
+      TZ: "Asia/Seoul"
     ports:
-      - '3306:3306'
-#    volumes:
-#      - mysql_data:/var/lib/mysql
-    # MySQL 초기 설정이나 성능 최적화가 필요할 때 사용
+      - "3308:3306"
     command:
       - --character-set-server=utf8mb4
       - --collation-server=utf8mb4_unicode_ci
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - mysql_data:/var/lib/mysql
     networks:
       - joinflix-network
 
-# 데이터 영속성을 위한 볼륨 정의
-#volumes:
-#  redis_data:
-#  mysql_data:
+  # 5. Prometheus(데이터 수집)
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus-joinflix
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml # 위에서 만든 설정 파일 연결
+    depends_on:
+      - backend
+    networks:
+      - joinflix-network
 
-# 컨테이너 간 통신을 위한 네트워크 정의
+  # 6. Grafana(시각화)
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana-joinflix
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin123
+    volumes:
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - prometheus
+    networks:
+      - joinflix-network
+
+
+# 볼륨 및 네트워크 정의
+volumes:
+  mysql_data:
+  grafana_data:
+
 networks:
   joinflix-network:
     driver: bridge
