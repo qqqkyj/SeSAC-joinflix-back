@@ -67,9 +67,39 @@ services:
     networks:
       - joinflix-network
 
+#  # 5. Prometheus (추가)
+#  prometheus:
+#    image: prom/prometheus:latest
+#    container_name: prometheus-joinflix
+#    ports:
+#      - "9090:9090"
+#    volumes:
+#      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+#    depends_on:
+#      - backend
+#    networks:
+#      - joinflix-network
+#
+#  # 6. Grafana (추가)
+#  grafana:
+#    image: grafana/grafana:latest
+#    container_name: grafana-joinflix
+#    ports:
+#      - "3001:3000" # 외부 접속 포트 3001
+#    environment:
+#      - GF_SECURITY_ADMIN_USER=admin
+#      - GF_SECURITY_ADMIN_PASSWORD=admin123
+#    volumes:
+#      - grafana_data:/var/lib/grafana
+#    depends_on:
+#      - prometheus
+#    networks:
+#      - joinflix-network
+
 # 볼륨 및 네트워크 정의
 volumes:
   mysql_data:
+#  grafana_data:
 
 networks:
   joinflix-network:
